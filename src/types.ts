@@ -1,6 +1,7 @@
 export interface LicenseAgentConfig {
     serverUrl: string;
     apiKey: string;
+    licenseKey: string;
     productName: string;
     cacheTTL?: number;
     gracePeriod?: number;

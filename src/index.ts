@@ -61,7 +61,7 @@ export class LicenseAgent {
 
         try {
             const requestData: ApiValidateRequest = {
-                license_key: this.config.apiKey,
+                license_key: this.config.licenseKey,
                 product_name: this.config.productName,
                 metadata: { ...this.config.staticMetadata, ...payload?.metadata },
             };
