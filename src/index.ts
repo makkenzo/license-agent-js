@@ -19,7 +19,7 @@ interface ApiValidateRequest {
 }
 
 export class LicenseAgent {
-    private config: Required<Omit<LicenseAgentConfig, 'staticMetadata'>> & { staticMetadata?: Record<string, unknown> };
+    public config: Required<Omit<LicenseAgentConfig, 'staticMetadata'>> & { staticMetadata?: Record<string, unknown> };
     private apiClient: AxiosInstance;
     private cache: CacheEntry | null = null;
 
@@ -55,17 +55,11 @@ export class LicenseAgent {
         const now = Date.now();
 
         if (this.cache && now - this.cache.timestamp < this.config.cacheTTL) {
-            console.debug('LicenseAgent: Using cached validation result.');
-
             const cachedResult = { ...this.cache.result };
-            if (!cachedResult.isOffline && !cachedResult.isGracePeriod) {
-                cachedResult.reason = cachedResult.reason + ' (cached)';
-            }
             return cachedResult;
         }
 
         try {
-            console.debug('LicenseAgent: Performing online validation check...');
             const requestData: ApiValidateRequest = {
                 license_key: this.config.apiKey,
                 product_name: this.config.productName,
@@ -93,10 +87,9 @@ export class LicenseAgent {
             };
 
             this.updateCache(result);
-            console.debug('LicenseAgent: Online check successful.', result);
+
             return result;
         } catch (error) {
-            console.warn('LicenseAgent: Online validation check failed.', error);
             const networkError = new NetworkError('Failed to connect to license server', error as Error);
 
             if (this.cache) {
@@ -104,11 +97,6 @@ export class LicenseAgent {
                 const lastValidResult = this.cache.result;
 
                 if (lastValidResult.isValid && timeSinceLastCheck < this.config.gracePeriod) {
-                    console.warn(
-                        `LicenseAgent: Operating in grace period. Last check ${Math.round(
-                            timeSinceLastCheck / 1000
-                        )}s ago.`
-                    );
                     return {
                         ...lastValidResult,
                         isValid: true,
@@ -118,9 +106,6 @@ export class LicenseAgent {
                         error: networkError,
                     };
                 } else {
-                    console.error(
-                        `LicenseAgent: Grace period expired or last check was invalid. Offline validation failed.`
-                    );
                     return {
                         ...lastValidResult,
                         isValid: false,
@@ -131,7 +116,6 @@ export class LicenseAgent {
                     };
                 }
             } else {
-                console.error('LicenseAgent: Network error and no cache available.');
                 return {
                     isValid: false,
                     isOffline: true,
@@ -165,7 +149,6 @@ export class LicenseAgent {
 
         if (!result.isValid) {
             if (result.isGracePeriod) {
-                console.warn('License check failed but operating in grace period.');
                 return;
             }
 
@@ -183,13 +166,11 @@ export class LicenseAgent {
                 result: { ...result, error: undefined },
                 timestamp: Date.now(),
             };
-            console.debug('LicenseAgent: Cache updated.');
         }
     }
 
     public clearCache(): void {
         this.cache = null;
-        console.debug('LicenseAgent: Cache cleared.');
     }
 }
 
